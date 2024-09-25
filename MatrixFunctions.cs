@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace PF1;
 
 // regroups every method related to Matrix<T> 
-public class M : IFuncs
+public struct M : IFuncs
 {
     public static Matrix<T> MatNulle<T>(int rows, int cols)
     {
@@ -65,10 +65,9 @@ public class M : IFuncs
     //     for (int j = 0; j < A.mat[0].Count; j++)
     //         A.mat[i][j] *= k;
     public static Matrix<double> MatMultk(Matrix<double> A, double k)
-    => new(
-        A.mat.Select(x => x.Select(y => y * k)
-                           .ToList())
-             .ToList());
+    => new(A.mat.Select(x => x.Select(y => y * k)
+                              .ToList())
+                .ToList());
 
     public static Matrix<double> MatProduit(Matrix<double> A, Matrix<double> B)
     {
@@ -99,7 +98,7 @@ public class M : IFuncs
 
     public static Matrix<double> MatPow(Matrix<double> A, double k)
     => k == 0 ? throw new Exception("Hoi cunt dis ai3nt define moight")
-        : k == 1 ? A : MatProduit(A, MatPow(A, k - 1));
+            : k == 1 ? A : MatProduit(A, MatPow(A, k - 1));
 
     public static double MatDetW(Matrix<double> M)
     {
@@ -349,6 +348,7 @@ public class M : IFuncs
     public static Matrix<double> MatMkl(int n, double k, int l) // Produit la matrice de multiplication d'une ligne
     {
         Matrix<double> M = MatNulle<double>(n, n);
+
         for (int i = 0; i < n; i++)
         {
             for (int j = 0; j < n; j++)
@@ -376,7 +376,7 @@ public class M : IFuncs
         List<Matrix<double>> E = [];
 
         if (mA != nA)
-            throw new Exception("ERREUR: La matrice doit être carrée.");
+            throw new Exception("MatLUlower : ERREUR; La matrice doit être carrée.");
 
         M = A;
 
@@ -444,12 +444,6 @@ public class M : IFuncs
                 LignePivot = i;
             }
         }
-
-        // int Res;
-        // if (m == 0)
-        //     Res = 0;
-        // else
-        //     Res = LignePivot + 1;
 
         return m == 0 ? 0 : LignePivot + 1;
     }
@@ -613,35 +607,37 @@ public class M : IFuncs
     }
 
 
-
-
     // TODO: implement these functions:
     public static
         (Matrix<double>, Matrix<double>, Matrix<double>, Matrix<double>)
         MatLu(Matrix<double> A)
-        => throw new NotImplementedException();
-
+    {
+        throw new NotImplementedException();
+    }
 
     public static
         Matrix<double> MatSolve(Matrix<double> A, Matrix<double> B)
-        => throw new NotImplementedException();
+    {
+        throw new NotImplementedException();
+    }
 
-    public static
-        double MatDet(Matrix<double> A)
-        => throw new NotImplementedException();
+    public static double MatDet(Matrix<double> A)
+    {
+        throw new NotImplementedException();
+    }
 
-    public static
-        Matrix<double> MatInvLU(Matrix<double> A)
-        => throw new NotImplementedException();
+    public static Matrix<double> MatInvLU(Matrix<double> A)
+    {
+        throw new NotImplementedException();
+    }
 
-    public static
-        Matrix<double> MatRREF(Matrix<double> A)
-        => throw new NotImplementedException();
+    public static Matrix<double> MatRREF(Matrix<double> A)
+    {
+        throw new NotImplementedException();
+    }
 
-    public static
-        double MatRank(Matrix<double> A)
-        => throw new NotImplementedException();
-
-
-
+    public static double MatRank(Matrix<double> A)
+    {
+        throw new NotImplementedException();
+    }
 }

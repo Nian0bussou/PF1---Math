@@ -1,6 +1,6 @@
-﻿using C = System.Console;
-using PF1;
-using System.Threading.Tasks.Dataflow;
+﻿using PF1;
+
+static void WRT<T>(T t) => Console.WriteLine(t); // wrapper to make Console.Writeline shorter to use
 
 var A = new Matrix<double>([
     [ -35,   0, -19,  99, -91, -35,   0],
@@ -20,7 +20,6 @@ var B = new Matrix<double>([
     [  0, -45,   0],
     [  0,   1,   0]]);
 
-static void WRT<T>(T t) => C.WriteLine(t);
 
 WRT("AB");
 WRT(M.MatProduit(A, B));

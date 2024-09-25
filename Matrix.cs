@@ -12,7 +12,7 @@ public struct Matrix<T>(List<List<T>> t)
         string s = "";
         mat.ForEach(row =>
         {
-            row.ForEach(c => s += string.Format($"{c, 25}"));
+            row.ForEach(c => s += string.Format($"{c,25}"));
             s += Environment.NewLine;
         });
 
