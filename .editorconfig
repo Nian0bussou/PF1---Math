@@ -8,3 +8,4 @@ max_line_length = 80
 csharp_indent_multiline_statements = true
 csharp_indent_multiline_expressions = true
 
+csharp_new_line_before_open_brace = none

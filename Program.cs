@@ -7,7 +7,7 @@ static void WRTA<T>(T[] a) =>
      .ForEach(t => { WRT(t); Console.WriteLine(); });
 
 
-var A = new qMatrix<double>([
+var A = new qmatrix<double>([
     [ -35,   0, -19,  99, -91, -35,   0],
     [   0,   0, -50,   0,   0,  80,  12],
     [   0, -88,   0,  -3,   0, -82,   0],
@@ -16,7 +16,7 @@ var A = new qMatrix<double>([
     [   0,  86,   0, -61,  22,   0,   0],
     [   0,   0, -15, -78,   0,  82, -25]]);
 
-var B = new qMatrix<double>(
+var B = new qmatrix<double>(
     [
         [235],
         [24],

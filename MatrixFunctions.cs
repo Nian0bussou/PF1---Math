@@ -1,27 +1,19 @@
-using System.Runtime.InteropServices;
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
 
 namespace PF1;
 
-using double_mat = List<List<double>>;
-using int_mat = List<List<int>>;
-using string_mat = List<List<string>>;
-
 // regroups every method related to Matrix<T> 
-public struct M : IFuncs
-{
+public struct M : IFuncs {
     /// <summary>
     /// sometime will output somevalues that are '-0'
     /// || 0 -> 0
     /// (probably caused by floating point precision error)
     /// </summary>
-    public static qMatrix<double> MatFilterNegZero(qMatrix<double> A)
-    {
+    public static qmatrix<double> MatFilterNegZero(qmatrix<double> A) {
         for (int r = 0; r < A.Rows; r++)
             for (int c = 0; c < A.Cols; c++)
-            {
                 if (A.mat[r][c] == -0)
                     A.mat[r][c] = Math.Abs(A.mat[r][c]);
-            }
         return A;
     }
 
@@ -32,15 +24,13 @@ public struct M : IFuncs
     /// <param name="rows"></param>
     /// <param name="cols"></param>
     /// <returns></returns>
-    public static qMatrix<T> MatNulle<T>(int rows, int cols)
-    {
-        var r = new List<List<T>>();
-        for (int i = 0; i < rows; i++)
-            r.Add(Enumerable
-                  .Repeat(default(T), cols)
-                  .ToList()
-                  );
-        return new qMatrix<T>(r);
+    public static qmatrix<T> MatNulle<T>(int rows, int cols) {
+        T[][] A = new T[rows][];
+        for (int r = 0; r < rows; r++) A[r] = new T[cols];
+
+        T[][] E = A.ToList().Select(x => x.ToList().Select(_ => default(T)).ToArray()).ToArray();
+
+        return new qmatrix<T>(E);
     }
 
     /// <summary>
@@ -49,13 +39,12 @@ public struct M : IFuncs
     /// <param name="rows"></param>
     /// <param name="cols"></param>
     /// <returns></returns>
-    public static qMatrix<double> MatRand(int rows, int cols)
-    {
+    public static qmatrix<double> MatRand(int rows, int cols) {
         var r = new Random();
         var E = MatNulle<double>(rows, cols);
 
         for (int i = 0; i < E.Rows; i++)
-            E.mat[i][i] = r.Next(0, 30);
+            E.mat[i][i] = r.Next(0, 10000);
 
         return E;
     }
@@ -65,9 +54,8 @@ public struct M : IFuncs
     /// </summary>
     /// <param name="x"></param>
     /// <returns></returns>
-    public static qMatrix<double> MatId(int x)
-    {
-        qMatrix<double> I = MatNulle<double>(x, x);
+    public static qmatrix<double> MatId(int x) {
+        qmatrix<double> I = MatNulle<double>(x, x);
 
         for (int i = 0; i < x; i++)
             I.mat[i][i] = 1;
@@ -80,11 +68,10 @@ public struct M : IFuncs
     /// </summary>
     /// <param name="A"></param>
     /// <returns></returns>
-    public static qMatrix<double> MatT(qMatrix<double> A)
-    {
+    public static qmatrix<double> MatT(qmatrix<double> A) {
         int nRow = A.Rows;
         int nCol = A.Cols;
-        qMatrix<double> T = MatNulle<double>(nCol, nRow);
+        qmatrix<double> T = MatNulle<double>(nCol, nRow);
 
         for (int i = 0; i < nRow; i++)
             for (int j = 0; j < nRow; j++)
@@ -97,11 +84,10 @@ public struct M : IFuncs
     /// A + B
     /// </summary>
     /// <exception cref="ArgumentException">returns an exception if A & B are not the same size</exception>
-    public static qMatrix<double> MatSomme(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static qmatrix<double> MatSomme(qmatrix<double> A, qmatrix<double> B) {
         if (A.Rows != B.Rows || A.Cols != B.Cols) throw new ArgumentException("not the same length");
 
-        qMatrix<double> E = MatNulle<double>(A.Rows, A.Cols);
+        qmatrix<double> E = MatNulle<double>(A.Rows, A.Cols);
         for (int i = 0; i < A.Rows; i++)
             for (int j = 0; j < A.Cols; j++)
                 E.mat[i][j] = A.mat[i][j] + B.mat[i][j];
@@ -114,10 +100,10 @@ public struct M : IFuncs
     /// <param name="A"></param>
     /// <param name="k"></param>
     /// <returns></returns>
-    public static qMatrix<double> MatMultk(qMatrix<double> A, double k)
+    public static qmatrix<double> MatMultk(qmatrix<double> A, double k)
     => new(A.mat.Select(x => x.Select(y => y * k)
-                              .ToList())
-                .ToList());
+                              .ToArray())
+                .ToArray());
 
     /// <summary>
     /// Dot product of A, B
@@ -126,29 +112,27 @@ public struct M : IFuncs
     /// <param name="B"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static qMatrix<double> MatProduit(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static qmatrix<double> MatProduit(qmatrix<double> A, qmatrix<double> B) {
         int rowAlen = A.Rows;
         int colAlen = A.Cols;
         int rowBlen = B.Rows;
         int colBlen = B.Cols;
 
 
-        if (colAlen != rowBlen)
-            throw new ArgumentException("Matrixes can't be multiplied!!");
+        if (colAlen != rowBlen) throw new ArgumentException("Matrixes can't be multiplied!!");
 
         double tmp;
 
-        qMatrix<double> E = MatNulle<double>(rowAlen, colBlen);
+        qmatrix<double> E = MatNulle<double>(rowAlen, colBlen);
 
-        for (int i = 0; i < rowAlen; i++)
-            for (int j = 0; j < colBlen; j++)
-            {
+        for (int i = 0; i < rowAlen; i++) {
+            for (int j = 0; j < colBlen; j++) {
                 tmp = 0;
                 for (int k = 0; k < colAlen; k++)
                     tmp += A.mat[i][k] * B.mat[k][j];
                 E.mat[i][j] = tmp;
             }
+        }
 
         return E;
     }
@@ -158,16 +142,14 @@ public struct M : IFuncs
     /// uses recursion
     /// </summary>
     /// <exception cref="Exception">matrix not defined with k == 0 </exception>
-    public static qMatrix<double> MatPow(qMatrix<double> A, double k)
+    public static qmatrix<double> MatPow(qmatrix<double> A, double k)
     => k == 0 ? throw new Exception("Hoi cunt dis ai3nt define moight")
             : k == 1 ? A : MatProduit(A, MatPow(A, k - 1));
-
 
     /// <summary>
     /// determinant of the matrix
     /// </summary>
-    public static double MatDetW(qMatrix<double> M)
-    {
+    public static double MatDetW(qmatrix<double> M) {
         int n = M.Rows;
         if (n == 1) return M.mat[0][0];
         if (n == 2) return M.mat[0][0] * M.mat[1][1] - M.mat[0][1] * M.mat[1][0];
@@ -176,7 +158,7 @@ public struct M : IFuncs
 
         for (int j = 0; j < n; j++)
             determinant +=
-                ((j % 2 == 0) ? 1 : -1) // sign
+                ((j % 2 == 0) ? 1 : -1) // signe du determinant
                 * M.mat[0][j]
                 * MatDetW(MatSousMat(M, 0, j));
 
@@ -187,46 +169,42 @@ public struct M : IFuncs
     /// Function to get the minor of a matrix by removing the specified row and column
     /// Does not check the value rowToRemove && colToRemove beforehand
     /// </summary>
-    public static qMatrix<double> MatSousMat(qMatrix<double> matrix, int rowToRemove, int colToRemove)
-    {
+    public static qmatrix<double> MatSousMat(qmatrix<double> matrix, int rowToRemove, int colToRemove) {
 
-        double_mat minor = [];
+        double[][] minor = [];
 
         var rows = matrix.Rows;
         var cols = matrix.Cols;
 
-        int idx = 0;
-        for (int i = 0; i < rows; i++)
+        var iminor = 0;
+        for (int i = 0; i < rows; i++) {
+            var jminor = 0;
             if (i != rowToRemove) // skip the row to remove
             {
-                List<double> newRow = [];
-                int jdx = 0;
                 for (int j = 0; j < cols; j++)
                     if (j != colToRemove) // skip the column to remove
                     {
-                        newRow.Add(matrix.mat[i][j]);
-                        jdx++;
+                        minor[iminor][jminor] = matrix.mat[i][j];
+                        jminor += 1;
                     }
-                minor.Add(newRow);
-                idx++;
+                iminor += 1;
             }
+        }
 
-        return new qMatrix<double>(minor);
+        return new qmatrix<double>(minor);
     }
 
-    public static qMatrix<double> MatInvW(qMatrix<double> A)
-    {
+    public static qmatrix<double> MatInvW(qmatrix<double> A) {
 
         var mA = A.Rows;
         var nA = A.Cols;
 
 
-        if (mA != nA)
-            throw new ArgumentException("MATINTW: ERR; (not a square matrix);\nAy yoo cunt m8t Nicht definiert");
-        if (MatDetW(A) == 0)
-            throw new ArgumentException("N'est pas inversible");
+        if (mA != nA) throw new ArgumentException("MATINTW: ERR; (not a square matrix);\nAy yoo cunt m8t Nicht definiert");
+        if (MatDetW(A) == 0) throw new ArgumentException("N'est pas inversible");
 
-        qMatrix<double> C = MatNulle<double>(mA, nA);
+        qmatrix<double> C = MatNulle<double>(mA, nA);
+
         for (int i = 0; i < mA; i++)
             for (int j = 0; j < nA; j++)
                 C.mat[i][j] = Math.Pow(-1, i + j) * MatDetW(MatSousMat(A, i, j));
@@ -246,20 +224,17 @@ public struct M : IFuncs
     /////////////////////////////////////// 
 
 
-    public static qMatrix<double> MatProduitListe(List<qMatrix<double>> L)
-    {
+    public static qmatrix<double> MatProduitListe(List<qmatrix<double>> L) {
         int n = L.Count;
         int mA = L[0].Rows;
         int nA = L[0].Cols;
-        qMatrix<double> A;
+        qmatrix<double> A;
         A = L[0];
-        for (int i = 0; i < n; i++)
-            A = MatProduit(A, L[i]);
+        for (int i = 0; i < n; i++) A = MatProduit(A, L[i]);
         return A;
     }
 
-    public static bool MatEqual(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static bool MatEqual(qmatrix<double> A, qmatrix<double> B) {
         int mA = A.Rows;
         int nA = A.Cols;
         int mB = B.Rows;
@@ -271,19 +246,16 @@ public struct M : IFuncs
                 if (A.mat[i][j] != B.mat[i][j]) return false;
         return true;
     }
-    public static qMatrix<double> MatAugment(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static qmatrix<double> MatAugment(qmatrix<double> A, qmatrix<double> B) {
         int rA = A.Rows;
         int cA = A.Cols;
         int rB = B.Rows;
         int cB = B.Cols;
 
-        if (rA != rB)
-            throw new ArgumentException("ERR: MatAugment;; doivent avoir meme nombre de lignes");
+        if (rA != rB) throw new ArgumentException("ERR: MatAugment;; doivent avoir meme nombre de lignes");
 
-        qMatrix<double> E = MatNulle<double>(rA, cA + cB);
-        for (int i = 0; i < rA; i++)
-        {
+        qmatrix<double> E = MatNulle<double>(rA, cA + cB);
+        for (int i = 0; i < rA; i++) {
             for (int j = 0; j < cA; j++)
                 E.mat[i][j] = A.mat[i][j];
             for (int j = 0; j < cB; j++)
@@ -291,56 +263,57 @@ public struct M : IFuncs
         }
         return E;
     }
-    public static qMatrix<double> MatBackSub(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static qmatrix<double> MatBackSub(qmatrix<double> A, qmatrix<double> B) {
         int mA = A.Rows;
         int nA = A.Cols;
-        qMatrix<double> M = MatNulle<double>(nA, 1);
+        qmatrix<double> M = MatNulle<double>(nA, 1);
         double S;
         M.mat[nA - 1][0] = B.mat[nA - 1][0] / A.mat[mA - 1][nA - 1];
-        for (int i = 1; i < mA; i++)
-        {
+        for (int i = 1; i < mA; i++) {
             S = 0;
-            for (int k = mA - i; k < nA; k++) S += A.mat[mA - i - 1][k] * M.mat[k][0];
-            M.mat[mA - i - 1][0] = 1 / A.mat[mA - i - 1][nA - i - 1] * (B.mat[mA - i - 1][0] - S);
+            for (int k = mA - i; k < nA; k++)
+                S += A.mat[mA - i - 1][k] * M.mat[k][0];
+
+            M.mat[mA - i - 1][0] =
+                1 / A.mat[mA - i - 1][nA - i - 1] * (B.mat[mA - i - 1][0] - S);
         }
         return M;
     }
-    public static qMatrix<double> MatForwardSub(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static qmatrix<double> MatForwardSub(qmatrix<double> A, qmatrix<double> B) {
         int mA = A.Rows;
         int nA = A.Cols;
-        qMatrix<double> M = MatNulle<double>(nA, 1);
+
+        qmatrix<double> M = MatNulle<double>(nA, 1);
+
         double S;
+
         M.mat[0][0] = B.mat[0][0] / A.mat[0][0];
-        for (int i = 1; i < mA; i++)
-        {
+
+        for (int i = 1; i < mA; i++) {
             S = 0;
             for (int k = 0; k < i; k++)
                 S += A.mat[i][k] * M.mat[k][0];
-            M.mat[i][0] = 1 / A.mat[i][i] * (B.mat[i][0] - S);
+            M.mat[i][0] =
+                1 / A.mat[i][i] * (B.mat[i][0] - S);
         }
         return M;
     }
-    public static qMatrix<double> MatColumn(qMatrix<double> A, int j)
-    {
+    public static qmatrix<double> MatColumn(qmatrix<double> A, int j) {
         int mA = A.Rows;
-        qMatrix<double> M = MatNulle<double>(mA, 1);
+        qmatrix<double> M = MatNulle<double>(mA, 1);
         for (int k = 0; k < mA; k++)
             M.mat[k][0] = A.mat[k][j - 1];
         return M;
     }
-    public static qMatrix<double> MatRow(qMatrix<double> A, int i)
-    {
+    public static qmatrix<double> MatRow(qmatrix<double> A, int i) {
         int nA = A.Cols;
-        qMatrix<double> M = MatNulle<double>(1, nA);
+        qmatrix<double> M = MatNulle<double>(1, nA);
         for (int k = 0; k < nA; k++)
             M.mat[0][k] = A.mat[i - 1][k];
         return M;
     }
 
-    public static List<qMatrix<double>> ReverseL(List<qMatrix<double>> L)
-    {
+    public static List<qmatrix<double>> ReverseL(List<qmatrix<double>> L) {
         L.Reverse();
         return L;
     }
@@ -353,18 +326,17 @@ public struct M : IFuncs
     //     return Lrev;
     // }
 
-    public static qMatrix<double> MatEk(qMatrix<double> A, int k) // Produit la matrice élémentaire pour l'échelonnage selon Gauss
+    public static qmatrix<double> MatEk(qmatrix<double> A, int k) // Produit la matrice élémentaire pour l'échelonnage selon Gauss
     {
         int mA = A.Rows;
 
-        qMatrix<double> M = MatNulle<double>(mA, mA);
+        qmatrix<double> M = MatNulle<double>(mA, mA);
 
         if (A.mat[k - 1][k - 1] == 0)
             return MatId(mA);
 
         for (int i = 0; i < mA; i++)
-            for (int j = 0; j < mA; j++)
-            {
+            for (int j = 0; j < mA; j++) {
                 if (i == j)
                     M.mat[i][j] = 1;
                 if (j == k - 1)
@@ -374,14 +346,12 @@ public struct M : IFuncs
         return M;
     }
 
-    public static qMatrix<double> MatEkInv(qMatrix<double> A) // Produit la matrice élémentaire inverse de l'échelonnage selon Gauss
+    public static qmatrix<double> MatEkInv(qmatrix<double> A) // Produit la matrice élémentaire inverse de l'échelonnage selon Gauss
     {
         int mA = A.Rows;
-        qMatrix<double> M = MatNulle<double>(mA, mA);
-        for (int i = 0; i < mA; i++)
-        {
-            for (int j = 0; j < mA; j++)
-            {
+        qmatrix<double> M = MatNulle<double>(mA, mA);
+        for (int i = 0; i < mA; i++) {
+            for (int j = 0; j < mA; j++) {
                 if (i == j)
                     M.mat[i][j] = 1;
                 else if (A.mat[i][j] != 0)
@@ -391,22 +361,18 @@ public struct M : IFuncs
         return M;
     }
 
-    public static qMatrix<double> MatPkl(int n, int k, int l) // Produit la matrice de permutation des lignes k et l
+    public static qmatrix<double> MatPkl(int n, int k, int l) // Produit la matrice de permutation des lignes k et l
     {
-        qMatrix<double> M = MatNulle<double>(n, n);
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j < n; j++)
-            {
+        qmatrix<double> M = MatNulle<double>(n, n);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
                 if ((i == j) & ((i != k - 1) & (i != l - 1)))
                     M.mat[i][j] = 1;
-                else if (i == k - 1)
-                {
+                else if (i == k - 1) {
                     M.mat[i][l - 1] = 1;
                     M.mat[i][k - 1] = 0;
                 }
-                else if (i == l - 1)
-                {
+                else if (i == l - 1) {
                     M.mat[i][k - 1] = 1;
                     M.mat[i][l - 1] = 0;
                 }
@@ -418,18 +384,15 @@ public struct M : IFuncs
             return M;
     }
 
-    public static qMatrix<double> MatMkl(int n, double k, int l) // Produit la matrice de multiplication d'une ligne
+    public static qmatrix<double> MatMkl(int n, double k, int l) // Produit la matrice de multiplication d'une ligne
     {
-        qMatrix<double> M = MatNulle<double>(n, n);
+        qmatrix<double> M = MatNulle<double>(n, n);
 
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j < n; j++)
-            {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
                 if ((i == j) & (i != l - 1))
                     M.mat[i][j] = 1;
-                else if (i == l - 1)
-                {
+                else if (i == l - 1) {
                     M.mat[i][l - 1] = k;
                 }
             }
@@ -440,28 +403,26 @@ public struct M : IFuncs
 
     // PLU
 
-    public static qMatrix<double> MatLUlower(qMatrix<double> A)
-    {
+    public static qmatrix<double> MatLUlower(qmatrix<double> A) {
         int mA = A.Rows;
         int nA = A.Cols;
 
-        qMatrix<double> M = MatNulle<double>(mA, mA);
-        List<qMatrix<double>> E = [];
+        qmatrix<double> M = MatNulle<double>(mA, mA);
+        List<qmatrix<double>> E = [];
 
         if (mA != nA)
             throw new Exception("MatLUlower : ERREUR; La matrice doit être carrée.");
 
         M = A;
 
-        for (int i = 1; i < nA; i++)
-        {
+        for (int i = 1; i < nA; i++) {
             E = E.Prepend(MatEk(M, i)).ToList();
             M = MatProduit(E[0], M);
         }
 
         E = ReverseL(E);
 
-        List<qMatrix<double>> R = [];
+        List<qmatrix<double>> R = [];
 
         for (int i = 0; i < E.Count; i++)
             R.Add(MatEkInv(E[i]));
@@ -469,18 +430,15 @@ public struct M : IFuncs
         return MatProduitListe(R);
     }
 
-    public static double MatSignature(qMatrix<double> P) // On assume que P est bel et
+    public static double MatSignature(qmatrix<double> P) // On assume que P est bel et
     {
         int n = P.Rows;
         // On crée une matrice 2xn représentant les permutations
         int[,] M = new int[2, n];
-        for (int i = 0; i < n; i++)
-        {
+        for (int i = 0; i < n; i++) {
             M[0, i] = i + 1;
-            for (int k = 0; k < n; k++)
-            {
-                if (P.mat[i][k] == 1)
-                {
+            for (int k = 0; k < n; k++) {
+                if (P.mat[i][k] == 1) {
                     M[1, i] = k + 1;
                     break;
                 }
@@ -500,8 +458,7 @@ public struct M : IFuncs
         return S;
     }
 
-    public static int MatCherchePivot(qMatrix<double> A, int nombrePivots, int colonne)
-    {
+    public static int MatCherchePivot(qmatrix<double> A, int nombrePivots, int colonne) {
         int mA = A.Rows;
         int nA = A.Cols;
 
@@ -509,10 +466,8 @@ public struct M : IFuncs
 
         int LignePivot = nombrePivots;
 
-        for (int i = nombrePivots + 1; i < mA; i++)
-        {
-            if (Math.Abs(A.mat[i][colonne - 1]) > m)
-            {
+        for (int i = nombrePivots + 1; i < mA; i++) {
+            if (Math.Abs(A.mat[i][colonne - 1]) > m) {
                 m = Math.Abs(A.mat[i][colonne - 1]);
                 LignePivot = i;
             }
@@ -521,10 +476,9 @@ public struct M : IFuncs
         return m == 0 ? 0 : LignePivot + 1;
     }
 
-    public static qMatrix<double> MatEkGJ(qMatrix<double> A, int h, int k)
-    {
+    public static qmatrix<double> MatEkGJ(qmatrix<double> A, int h, int k) {
         int mA = A.Rows;
-        qMatrix<double> M = MatId(mA);
+        qmatrix<double> M = MatId(mA);
 
         for (int i = 0; i < mA; i++)
             if (i != h - 1)
@@ -532,8 +486,7 @@ public struct M : IFuncs
         return M;
     }
 
-    public static int[,] MatPivots(qMatrix<double> A)
-    {
+    public static int[,] MatPivots(qmatrix<double> A) {
         var mA = A.Rows;
         var nA = A.Cols;
         var B = MatRREF(A);
@@ -543,75 +496,62 @@ public struct M : IFuncs
         for (int i = 0; i < mA; i++)
             for (int j = 0; j < nA; j++)
                 //if (B[i,j]!=0) // provoque une instabilité numérique
-                if (Math.Abs(B.mat[i][j]) > Math.Pow(10, -12))
-                {
+                if (Math.Abs(B.mat[i][j]) > Math.Pow(10, -12)) {
                     Lpivots.Add([i + 1, j + 1]);
                     break;
                 }
 
         int[,] M = new int[Lpivots.Count, 2];
 
-        for (int i = 0; i < Lpivots.Count; i++)
-        {
+        for (int i = 0; i < Lpivots.Count; i++) {
             M[i, 0] = Lpivots[i][0];
             M[i, 1] = Lpivots[i][1];
         }
         return M;
     }
 
-    public static void MatAfficheString<T>(qMatrix<T> A)
-    {
-        for (int i = 0; i < A.Rows; i++)
-        {
+    public static void MatAfficheString<T>(qmatrix<T> A) {
+        for (int i = 0; i < A.Rows; i++) {
             Console.WriteLine();
             for (int j = 0; j < A.Cols; j++)
                 Console.Write(string.Format("{0}", A.mat[i][j]));
             Console.WriteLine();
         }
     }
-    public static void MatSol(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static void MatSol(qmatrix<double> A, qmatrix<double> B) {
         int mA = A.Rows;
         int nA = A.Cols;
         int mB = B.Rows;
-        if (mA != mB)
-        {
-            qMatrix<string> ES = MatNulle<string>(1, 1);
+        if (mA != mB) {
+            qmatrix<string> ES = MatNulle<string>(1, 1);
             ES.mat[0][0] = "ERREUR: Les dimensions sont incompatibles.";
             MatAfficheString(ES);
         }
-        else if (MatRank(A) < MatRank(MatAugment(A, B)))
-        {
-            qMatrix<string> ES = MatNulle<string>(1, 1);
+        else if (MatRank(A) < MatRank(MatAugment(A, B))) {
+            qmatrix<string> ES = MatNulle<string>(1, 1);
             ES.mat[0][0] = "Aucune solution.";
             MatAfficheString(ES);
         }
-        else
-        {
-            qMatrix<string> ES = MatNulle<string>(1, 1);
-            qMatrix<double> X = MatSolve(A, B);
+        else {
+            qmatrix<string> ES = MatNulle<string>(1, 1);
+            qmatrix<double> X = MatSolve(A, B);
 
-            for (int i = 0; i < nA; i++)
-            {
+            for (int i = 0; i < nA; i++) {
                 ES.mat[i][0] = "x_" + (i + 1) + " = ";
                 ES.mat[i][1] = X.mat[i][0].ToString("0.0000");
 
-                for (int j = 1, k = 1; j < X.Cols; j++)
-                {
+                for (int j = 1, k = 1; j < X.Cols; j++) {
                     if (Math.Abs(X.mat[i][j]) < Math.Pow(10, -12)) // On skippe si on est trop près de "0".
                     {
                         ES.mat[i][2 * j] = " ";
                         ES.mat[i][2 * j + 1] = " ";
                     }
-                    else
-                    {
-                        if (X.mat[i][j] > 0)
-                        {
+                    else {
+                        if (X.mat[i][j] > 0) {
                             ES.mat[i][2 * j] = " + ";
                             ES.mat[i][2 * j + 1] = Math.Abs(X.mat[i][j]).ToString() + "t_" + (k);
                         }
-                        else
-                        {
+                        else {
                             ES.mat[i][2 * j] = " - ";
                             ES.mat[i][2 * j + 1] = Math.Abs(X.mat[i][j]).ToString() + "t_" + (k);
                         }
@@ -623,8 +563,7 @@ public struct M : IFuncs
         }
     }
 
-    public static qMatrix<double> ImportMatrix(string chemin)
-    {
+    public static qmatrix<double> ImportMatrix(string chemin) {
         string firstLine = File.ReadLines(chemin).First();
         int ColumnsCount = 0;
 
@@ -635,22 +574,21 @@ public struct M : IFuncs
                 StringSplitOptions.RemoveEmptyEntries)
             .Length;
 
-        return new qMatrix<double>(File
+        return new qmatrix<double>(File
             .ReadAllText(chemin)
             .Split(
                 Array.Empty<string>(),
                 StringSplitOptions.RemoveEmptyEntries)
             .Select(
-                (s, i) => new
-                {
+                (s, i) => new {
                     N = double.Parse(s),
                     I = i
                 })
             .GroupBy(
                 at => at.I / ColumnsCount,
                 at => at.N,
-                (k, g) => g.ToList())
-            .ToList());
+                (k, g) => g.ToArray())
+            .ToArray());
     }
     // (END) THIS SECTION CONTAINS CODE GIVEN. // 
 
@@ -664,7 +602,7 @@ public struct M : IFuncs
     ///////////////////////////////////////////////// 
 
 
-    public static qMatrix<double> MatTestP(qMatrix<double> A, int k) // given ? need to look further into that one
+    public static qmatrix<double> MatTestP(qmatrix<double> A, int k) // given ? need to look further into that one
     {
         var P = MatId(A.Rows);
 
@@ -687,69 +625,20 @@ public struct M : IFuncs
     /// <summary>
     /// reduced row echelon form (Gauss-Jordan method)
     /// </summary>
-    public static qMatrix<double> MatRREF(qMatrix<double> A) // inspired by https://github.com/mirhagk/matrixreducer
-    {
-        int rows = A.Rows;
-        int cols = A.Cols;
-
-        int lead = 0;
-
-        for (int r = 0; r < rows; r++)
-        {
-            if (lead >= cols) return A;
-
-            int i = r;
-            while (A.mat[i][lead] == 0)
-            {
-                i += 1;
-                if (i == rows)
-                {
-                    i = r;
-                    lead++;
-                    if (lead == cols) return A;
-                }
-            }
-
-            A = SwapRows(A, i, r);
-
-            // get firstrow to start with 1
-            double leadVal = A.mat[r][lead];
-            for (int j = 0; j < cols; j++)
-                A.mat[r][j] /= leadVal;
-
-            // Make other rows have a zero in the lead column
-            for (int i2 = 0; i2 < rows; i2++)
-            {
-                if (i2 != r)
-                {
-                    double leadFactor = A.mat[i2][lead];
-                    for (int j = 0; j < cols; j++)
-                        A.mat[i2][j] -= leadFactor * A.mat[r][j];
-                }
-            }
-            lead++;
-        }
-
-        A = MatFilterNegZero(A);
-
-        return A;
-    }
+    public static qmatrix<double> MatRREF(qmatrix<double> A) => throw new NotImplementedException();
 
     /// <summary>
     /// Get the rank of a matrix
     /// </summary>
-    public static double MatRank(qMatrix<double> A)
-    {
+    public static double MatRank(qmatrix<double> A) {
         // local func. to check if contains only zeros( [0, 0, ..., 0] )
-        static bool containsAllZero(List<double> a)
-        {
+        static bool containsAllZero(double[] a) {
             foreach (var v in a) if (v != 0) return false;
             return true;
         }
 
         int n = 0;
-        foreach (var rows in A.mat)
-        {
+        foreach (var rows in A.mat) {
             if (containsAllZero(rows)) continue;
             else n++;
         }
@@ -761,22 +650,20 @@ public struct M : IFuncs
     /// </summary>
     /// <exception cref="ArgumentException">Matrix A is not a square</exception>
     /// TODO:  Finish this
-    public static qMatrix<double>[] MatLu(qMatrix<double> A)
-    {
+    public static qmatrix<double>[] MatLu(qmatrix<double> A) {
         // use matek to get elementaire matrix 
         int n = A.Rows;
 
         if (A.Rows != A.Cols) throw new ArgumentException("Kyaputen, we need a square");
 
-        qMatrix<double> P = MatId(n);
-        qMatrix<double> L = MatId(n);
-        qMatrix<double> U = CopyMatrix(A);
+        qmatrix<double> P = MatId(n);
+        qmatrix<double> L = MatId(n);
+        qmatrix<double> U = CopyMatrix(A);
 
-        List<qMatrix<double>> Es = [];
+        List<qmatrix<double>> Es = [];
 
-        qMatrix<double> An = new();
-        for (int c = 0; c < A.Cols; c++)
-        {
+        qmatrix<double> An = new();
+        for (int c = 0; c < A.Cols; c++) {
             var E = MatEk(A, c);
             Es.Add(E);
 
@@ -842,105 +729,29 @@ public struct M : IFuncs
         throw new NotImplementedException();
     }
 
-    public static qMatrix<double> MatSolve(qMatrix<double> A, qMatrix<double> B)
-    {
+    public static qmatrix<double> MatSolve(qmatrix<double> A, qmatrix<double> B) {
         throw new NotImplementedException();
     }
 
-    public static double MatDet(qMatrix<double> A)
-    {
+    public static double MatDet(qmatrix<double> A) {
         throw new NotImplementedException();
     }
 
-    public static qMatrix<double> MatInvLU(qMatrix<double> A)
-    {
+    public static qmatrix<double> MatInvLU(qmatrix<double> A) {
         throw new NotImplementedException();
     }
 
     /// <summary>
     /// deep copy a matrix instead of reference copy
     /// </summary>
-    private static qMatrix<double> CopyMatrix(qMatrix<double> A)
-    => new(
-        A.mat.Select(x => x.Select(x => x).ToList()).ToList()
-    );
+    private static qmatrix<double> CopyMatrix(qmatrix<double> A)
+    => new(A.mat.Select(x => x.Select(x => x).ToArray()).ToArray());
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //helper function
-    static qMatrix<double> SwapRows(qMatrix<double> A, int row1, int row2)
-    {
-        int cols = A.Cols;
-        for (int i = 0; i < cols; i++)
-            (A.mat[row2][i], A.mat[row1][i]) = (A.mat[row1][i], A.mat[row2][i]);
-        return A;
-    }
-    private static qMatrix<double> SwapRows(qMatrix<double> A, int row1, int row2, int upToCol)
-    {
-        for (int col = 0; col < upToCol; col++)
-        {
-            (A.mat[row2][col], A.mat[row1][col]) = (A.mat[row1][col], A.mat[row2][col]);
-        }
-
-        return A;
-    }
-
-    private static void SwapRows(List<List<double>> matrix, int row1, int row2, int upto = -1)
-    {
-        int n = matrix[0].Count;
-        if (upto == -1) upto = n;
-        for (int i = 0; i < upto; i++)
-        {
-            double temp = matrix[row1][i];
-            matrix[row1][i] = matrix[row2][i];
-            matrix[row2][i] = temp;
-        }
-    }
 
 
 
 }
+#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
