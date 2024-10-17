@@ -9,3 +9,9 @@ csharp_indent_multiline_statements = true
 csharp_indent_multiline_expressions = true
 
 csharp_new_line_before_open_brace = none
+
+# IDE0061: Use block body for local function
+csharp_style_expression_bodied_local_functions = true
+
+# IDE0061: Use block body for local function
+csharp_style_expression_bodied_local_functions = false

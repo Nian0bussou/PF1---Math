@@ -1,14 +1,19 @@
 #pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
 
+using System.Security.Cryptography;
+
+using Assert = PF1.CAssert;
+
 namespace PF1;
 
+// # ChatGPT was used to generate some of the comments
+
 // regroups every method related to Matrix<T> 
-public struct M : IFuncs {
-    /// <summary>
-    /// sometime will output somevalues that are '-0'
-    /// || 0 -> 0
-    /// (probably caused by floating point precision error)
-    /// </summary>
+public class MatFuncs {
+
+    // sometime will output somevalues such as '-0' 
+    // returns => -0 -> 0
+    // (probably caused by floating point precision error)
     public static qmatrix<double> MatFilterNegZero(qmatrix<double> A) {
         for (int r = 0; r < A.Rows; r++)
             for (int c = 0; c < A.Cols; c++)
@@ -17,66 +22,39 @@ public struct M : IFuncs {
         return A;
     }
 
-    /// <summary>
-    /// gives a null matrix
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="rows"></param>
-    /// <param name="cols"></param>
-    /// <returns></returns>
+    /// gives a null matrix (default values, [int | double | float | etc. ] -> 0, string -> "", etc.. )
     public static qmatrix<T> MatNulle<T>(int rows, int cols) {
         T[][] A = new T[rows][];
         for (int r = 0; r < rows; r++) A[r] = new T[cols];
-
         T[][] E = A.ToList().Select(x => x.ToList().Select(_ => default(T)).ToArray()).ToArray();
-
         return new qmatrix<T>(E);
     }
 
-    /// <summary>
     /// generate a random matrix
-    /// </summary>
-    /// <param name="rows"></param>
-    /// <param name="cols"></param>
-    /// <returns></returns>
     public static qmatrix<double> MatRand(int rows, int cols) {
         var r = new Random();
         var E = MatNulle<double>(rows, cols);
-
         for (int i = 0; i < E.Rows; i++)
             E.mat[i][i] = r.Next(0, 10000);
-
         return E;
     }
 
-    /// <summary>
-    /// identity matrix
-    /// </summary>
-    /// <param name="x"></param>
-    /// <returns></returns>
+    // not generic because an identity of a (string | struct{} | class | ... ) matrix wouldnt make sense
     public static qmatrix<double> MatId(int x) {
         qmatrix<double> I = MatNulle<double>(x, x);
-
         for (int i = 0; i < x; i++)
             I.mat[i][i] = 1;
-
         return I;
     }
 
-    /// <summary>
     /// transpose the matrix
-    /// </summary>
-    /// <param name="A"></param>
-    /// <returns></returns>
     public static qmatrix<double> MatT(qmatrix<double> A) {
         int nRow = A.Rows;
         int nCol = A.Cols;
         qmatrix<double> T = MatNulle<double>(nCol, nRow);
-
         for (int i = 0; i < nRow; i++)
             for (int j = 0; j < nRow; j++)
                 T.mat[j][i] = A.mat[i][j];
-
         return T;
     }
 
@@ -157,10 +135,9 @@ public struct M : IFuncs {
         double determinant = 0;
 
         for (int j = 0; j < n; j++)
-            determinant +=
-                ((j % 2 == 0) ? 1 : -1) // signe du determinant
-                * M.mat[0][j]
-                * MatDetW(MatSousMat(M, 0, j));
+            determinant += ((j % 2 == 0) ? 1 : -1) // signe du determinant
+                            * M.mat[0][j]
+                            * MatDetW(MatSousMat(M, 0, j));
 
         return determinant;
     }
@@ -171,10 +148,11 @@ public struct M : IFuncs {
     /// </summary>
     public static qmatrix<double> MatSousMat(qmatrix<double> matrix, int rowToRemove, int colToRemove) {
 
-        double[][] minor = [];
 
         var rows = matrix.Rows;
         var cols = matrix.Cols;
+
+        double[][] minor = MatNulle<double>(rows, cols).mat;
 
         var iminor = 0;
         for (int i = 0; i < rows; i++) {
@@ -201,15 +179,15 @@ public struct M : IFuncs {
 
 
         if (mA != nA) throw new ArgumentException("MATINTW: ERR; (not a square matrix);\nAy yoo cunt m8t Nicht definiert");
-        if (MatDetW(A) == 0) throw new ArgumentException("N'est pas inversible");
+        if (MatDet(A) == 0) throw new ArgumentException("N'est pas inversible");
 
         qmatrix<double> C = MatNulle<double>(mA, nA);
 
         for (int i = 0; i < mA; i++)
             for (int j = 0; j < nA; j++)
-                C.mat[i][j] = Math.Pow(-1, i + j) * MatDetW(MatSousMat(A, i, j));
+                C.mat[i][j] = Math.Pow(-1, i + j) * MatDet(MatSousMat(A, i, j));
 
-        return MatMultk(MatT(C), 1f / MatDetW(A));
+        return MatMultk(MatT(C), 1f / MatDet(A));
     }
 
 
@@ -460,9 +438,10 @@ public struct M : IFuncs {
 
     public static int MatCherchePivot(qmatrix<double> A, int nombrePivots, int colonne) {
         int mA = A.Rows;
-        int nA = A.Cols;
 
         double m = Math.Abs(A.mat[nombrePivots][colonne - 1]);
+
+        if (m == 0) return 0;
 
         int LignePivot = nombrePivots;
 
@@ -473,7 +452,7 @@ public struct M : IFuncs {
             }
         }
 
-        return m == 0 ? 0 : LignePivot + 1;
+        return LignePivot + 1;
     }
 
     public static qmatrix<double> MatEkGJ(qmatrix<double> A, int h, int k) {
@@ -489,7 +468,8 @@ public struct M : IFuncs {
     public static int[,] MatPivots(qmatrix<double> A) {
         var mA = A.Rows;
         var nA = A.Cols;
-        var B = MatRREF(A);
+        var ls = MatRREF(A);
+        var B = ls[0];
 
         List<int[]> Lpivots = [];
 
@@ -602,156 +582,287 @@ public struct M : IFuncs {
     ///////////////////////////////////////////////// 
 
 
-    public static qmatrix<double> MatTestP(qmatrix<double> A, int k) // given ? need to look further into that one
-    {
-        var P = MatId(A.Rows);
+    public static qmatrix<double> MatTestP(qmatrix<double> A, int k) {
 
-        int idx = k;
+        int n = A.Rows;
 
-        double value = Math.Abs(A.mat[k][k]);
+        var P = MatId(n);
 
-        for (int i = k + 1; i < A.Rows; i++)
-            if (Math.Abs(A.mat[i][k]) != 0)
-                idx = i;
-        if (idx != k)
-            for (int i = 0; i < A.Rows; i++)
-                (P.mat[idx][i], P.mat[k][i])
-                = (P.mat[k][i], P.mat[idx][i]);
+        var pivotRow = MatCherchePivot(A, k, k);
 
+        if (pivotRow != k) {
+            for (int i = 0; i < n; i++) {
+                (P.mat[k][i], P.mat[pivotRow][i]) = (P.mat[pivotRow][i], P.mat[k][i]);
+            }
+        }
 
         return P;
     }
 
-    /// <summary>
-    /// reduced row echelon form (Gauss-Jordan method)
-    /// </summary>
-    public static qmatrix<double> MatRREF(qmatrix<double> A) => throw new NotImplementedException();
+    // これは塵を何ですか... ？？？
+    public static List<qmatrix<double>> MatRREF(qmatrix<double> A) {
+        var rows = A.Rows;
+        var cols = A.Cols;
 
-    /// <summary>
-    /// Get the rank of a matrix
-    /// </summary>
-    public static double MatRank(qmatrix<double> A) {
-        // local func. to check if contains only zeros( [0, 0, ..., 0] )
-        static bool containsAllZero(double[] a) {
-            foreach (var v in a) if (v != 0) return false;
-            return true;
+        qmatrix<double> E = MatId(rows);
+
+        int lead = 0;
+        for (int r = 0; r < rows; r++) {
+            if (lead >= cols) {
+                break;
+            }
+            int i = r;
+            while (A.mat[i][lead] == 0) {
+                i++;
+                if (i == rows) {
+                    i = r;
+                    lead++;
+                    if (lead == cols) {
+                        return [A, E]; // if already in RREF form
+                    }
+                }
+            }
+
+            // swap rows i and r in both 
+            (A.mat[i], A.mat[r]) = (A.mat[r], A.mat[i]);
+            (E.mat[i], E.mat[r]) = (E.mat[r], E.mat[i]); // Swap in elementary matrix
+
+            // make the lead 1 by dividing the row by A[r][lead] 
+            double leadVal = A.mat[r][lead];
+            for (int j = 0; j < cols; j++) {
+                A.mat[r][j] /= leadVal;
+            }
+            for (int j = 0; j < rows; j++) {  // Also divide the elementary matrix row
+                E.mat[r][j] /= leadVal;
+            }
+
+            // Eliminate all other rows in this column
+            for (int i2 = 0; i2 < rows; i2++) {
+                if (i2 != r) {
+                    double leadFactor = A.mat[i2][lead];
+                    for (int j = 0; j < cols; j++) {
+                        A.mat[i2][j] -= leadFactor * A.mat[r][j];
+                    }
+                    for (int j = 0; j < rows; j++) { // Apply the same operation to E
+                        E.mat[i2][j] -= leadFactor * E.mat[r][j];
+                    }
+                }
+            }
+
+            lead++;
         }
 
-        int n = 0;
-        foreach (var rows in A.mat) {
-            if (containsAllZero(rows)) continue;
-            else n++;
-        }
-        return n;
+        return [A, E];
     }
+
+    public static double MatRank(qmatrix<double> A) => MatPivots(A).Length;
 
     /// <summary>
     /// decompose matrix 'A' using PLU decomposition 
     /// </summary>
-    /// <exception cref="ArgumentException">Matrix A is not a square</exception>
-    /// TODO:  Finish this
+    /// <param name="A"></param>
+    /// <returns>[P, L, U, MatInvLU(P)]</returns>    
     public static qmatrix<double>[] MatLu(qmatrix<double> A) {
-        // use matek to get elementaire matrix 
+        Assert.Assert(A.isSquare, "A should be square MatLu");
+
         int n = A.Rows;
+        qmatrix<double> L = MatId(n); // initialize L as identity matrix
+        qmatrix<double> U = CopyMatrix(A); // Iiitialize U as a copy of A
+        qmatrix<double> P = MatId(n); // initialize P as identity matrix
 
-        if (A.Rows != A.Cols) throw new ArgumentException("Kyaputen, we need a square");
+        for (int k = 0; k < n; k++) {
+            // find the pivot element (maximum in the column)
+            int maxIndex = k;
+            double maxValue = Math.Abs(U.mat[k][k]);
+            for (int i = k + 1; i < n; i++) {
+                if (Math.Abs(U.mat[i][k]) > maxValue) {
+                    maxValue = Math.Abs(U.mat[i][k]);
+                    maxIndex = i;
+                }
+            }
 
-        qmatrix<double> P = MatId(n);
-        qmatrix<double> L = MatId(n);
-        qmatrix<double> U = CopyMatrix(A);
+            // ssap rows in U to move the pivot element to the current row
+            if (maxIndex != k) {
+                SwapRows(U, k, maxIndex);
+                SwapRows(P, k, maxIndex);
+                if (k > 0)
+                    SwapRows(L, k, maxIndex, k); // Only swap the columns up to the current pivot
+            }
 
-        List<qmatrix<double>> Es = [];
+            // perform Gaussian elimination to form U and L
+            for (int i = k + 1; i < n; i++) {
+                double factor = U.mat[i][k] / U.mat[k][k];
+                L.mat[i][k] = factor; // Fill L matrix
 
-        qmatrix<double> An = new();
-        for (int c = 0; c < A.Cols; c++) {
-            var E = MatEk(A, c);
-            Es.Add(E);
-
-            An = MatProduit(MatProduitListe(Es), A);
+                // subtract the factor times the k-th row from the i-th row of U
+                for (int j = k; j < n; j++) {
+                    U.mat[i][j] -= factor * U.mat[k][j];
+                }
+            }
         }
-
-        U = CopyMatrix(An);
-
-        L = MatInvW(MatProduitListe(Es));
-
-        // P = ID
-
-
         return [P, L, U, MatInvW(P)];
-        //////
-
-
-        // // List<qMatrix<double>> E = [];
-
-        // var pivot = A.Rows;
-
-        // var P = MatNulle<double>(pivot, pivot);
-        // var L = MatNulle<double>(pivot, pivot);
-        // var U = MatNulle<double>(pivot, pivot);
-
-        // // selong LU
-        // for (var i = 0; i < pivot; i++)
-        // {
-        //     for (var k = i; k < pivot; k++)
-        //     {
-        //         double sum = 0;
-
-        //         for (var j = 0; j < i; j++)
-        //         {
-        //             sum += L.mat[i][j] * U.mat[j][k];
-        //         }
-
-        //         U.mat[i][k] = A.mat[i][k] - sum;
-        //     }
-
-        //     for (var k = i; k < pivot; k++)
-        //     {
-        //         if (i == k)
-        //         {
-        //             L.mat[i][i] = 1;
-        //         }
-        //         else
-        //         {
-        //             double sum = 0;
-
-        //             for (var j = 0; j < i; j++)
-        //             {
-        //                 sum += L.mat[k][j] * U.mat[j][i];
-        //             }
-
-        //             L.mat[k][i] = (A.mat[k][i] - sum) / U.mat[i][i];
-        //         }
-        //     }
-        // }
-
-        // return [P, L, U, MatInvW(P)];
-
-        throw new NotImplementedException();
     }
 
     public static qmatrix<double> MatSolve(qmatrix<double> A, qmatrix<double> B) {
-        throw new NotImplementedException();
+        // Assert.Assert(A.isSquare, $"A should be a square\nsquare?{A.isSquare}\nrows: {A.Rows}\ncols: {A.Cols}");
+        Assert.Assert(A.Rows == B.Rows, "Expected : A Rows == B Rows");
+        var lll = MatLu(A);
+        var P = lll[0];
+        var L = lll[1];
+        var U = lll[2];
+        var pB = MatProduit(P, B);
+        var Y = ForwardSubstitution(L, pB);
+        var X = BackwardSubstitution(U, Y);
+        return X;
     }
 
     public static double MatDet(qmatrix<double> A) {
-        throw new NotImplementedException();
+        if (A.Rows != A.Cols)
+            throw new ArgumentException("Matrix must be square.");
+
+        int n = A.Rows;
+
+        var Tmp = CopyMatrix(A);
+
+        // Gauss elimination
+        double det = 1.0;
+        for (int i = 0; i < n; i++) {
+            // Search for maximum in this column (pivot)
+            int maxRow = i;
+            for (int k = i + 1; k < n; k++) {
+                if (Math.Abs(Tmp.mat[k][i]) > Math.Abs(Tmp.mat[maxRow][i])) {
+                    maxRow = k;
+                }
+            }
+
+            // Swap maximum row with current row (if necessary)
+            if (i != maxRow) {
+                (Tmp.mat[maxRow], Tmp.mat[i]) = (Tmp.mat[i], Tmp.mat[maxRow]);
+                det *= -1; // Swapping rows changes the sign of the determinant
+            }
+
+            // If the pivot element is zero, the matrix is singular (det = 0)
+            if (Math.Abs(Tmp.mat[i][i]) < 1e-10) {
+                return 0.0;
+            }
+
+            // For each row below the pivot row
+            for (int k = i + 1; k < n; k++) {
+                double factor = Tmp.mat[k][i] / Tmp.mat[i][i];
+                for (int j = i; j < n; j++) {
+                    Tmp.mat[k][j] -= factor * Tmp.mat[i][j];
+                }
+            }
+
+            // Multiply the diagonal elements to get the determinant
+            det *= Tmp.mat[i][i];
+        }
+
+        return det;
     }
 
     public static qmatrix<double> MatInvLU(qmatrix<double> A) {
-        throw new NotImplementedException();
+        var LU = MatLu(A);
+        var P = LU[0]; // Permutation matrix
+        var L = LU[1]; // Lower triangular matrix
+        var U = LU[2]; // Upper triangular matrix
+
+        int n = A.Rows; // Assuming A is a square matrix
+                        // Create identity matrix I of size n
+        var I = MatId(n);
+
+        // Initialize the inverse matrix X
+        var X = MatNulle<double>(n, n);
+
+        // Inverting the matrix using forward and backward substitution
+        for (int i = 0; i < n; i++) {
+            // Extract column i from the identity matrix I
+            double[] e = new double[n];
+            for (int j = 0; j < n; j++) {
+                e[j] = I.mat[j][i];
+            }
+
+            // FIXME: e => constantes ??? 
+
+            // Re => P^T * e
+            var Tp = MatT(P);
+            var Re = MatProduit(Tp, new qmatrix<double>(e));
+
+            // solve LY = P^T * e (forward substitution)
+            var y = ForwardSubstitution(L, Re);
+            // vector
+
+            // solve UX = y (backward substitution)
+            var x = BackwardSubstitution(U, y);
+            // vector
+
+            // Place the result column into X
+            for (int j = 0; j < n; j++) {
+                X.mat[j][i] = x.mat[j][0];
+            }
+        }
+
+        return X;
     }
 
-    /// <summary>
-    /// deep copy a matrix instead of reference copy
-    /// </summary>
-    private static qmatrix<double> CopyMatrix(qmatrix<double> A)
+    public static int[]? MatFreeVar(qmatrix<double> A) {
+        return null;
+    }
+    public static int[]? MatLinkVar(qmatrix<double> A) {
+        return null;
+    }
+    public static qmatrix<double>? MatKer(qmatrix<double> A) {
+        return null;
+    }
+
+    ////////////////////// HELPER FUNCTIONS
+
+
+    static qmatrix<double> CopyMatrix(qmatrix<double> A)
     => new(A.mat.Select(x => x.Select(x => x).ToArray()).ToArray());
 
+    public static qmatrix<double> ForwardSubstitution(qmatrix<double> L, qmatrix<double> B) {
+        int n = L.Rows;
+        var Y = MatNulle<double>(n, B.Cols);
+        for (int col = 0; col < B.Cols; col++)
+            for (int i = 0; i < n; i++) {
+                double sum = 0;
+
+                Assert.Assert(L.mat[i][i] != 0, $"value ({L.mat[i][i]}) should not be 0\n\n{L}");
+
+                for (int j = 0; j < i; j++)
+                    sum += L.mat[i][j] * Y.mat[j][col];
+                Y.mat[i][col] = (B.mat[i][col] - sum) / L.mat[i][i];
+            }
+        return Y;
+    }
+
+    public static qmatrix<double> BackwardSubstitution(qmatrix<double> U, qmatrix<double> Y) {
+        int n = U.Rows;
+        var X = MatNulle<double>(n, Y.Cols);
+        for (int col = 0; col < Y.Cols; col++)
+            for (int i = n - 1; i >= 0; i--) {
+                double sum = 0;
 
 
+                Assert.Assert(U.mat[i][i] != 0, $"value ({U.mat[i][i]}) should not be 0\n\n{U}");
+                // if (Math.Abs(U.mat[i][i]) < 1e-10) {
+                //     throw new Exception("Zero pivot encountered in ForwardSubstitution.");
+                // }
 
+                for (int j = i + 1; j < n; j++)
+                    sum += U.mat[i][j] * X.mat[j][col];
+                X.mat[i][col] = (Y.mat[i][col] - sum) / U.mat[i][i];
+            }
+        return X;
+    }
 
-
+    static void SwapRows(qmatrix<double> matrix, int row1, int row2, int startCol = 0) {
+        int cols = matrix.Cols;
+        for (int j = startCol; j < cols; j++) {
+            (matrix.mat[row2][j], matrix.mat[row1][j]) = (matrix.mat[row1][j], matrix.mat[row2][j]);
+        }
+    }
 
 }
 #pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
